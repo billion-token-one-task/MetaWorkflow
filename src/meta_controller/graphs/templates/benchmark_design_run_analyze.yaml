@@ -1,0 +1,51 @@
+template_name: benchmark_design_run_analyze
+nodes:
+  - id: research_planner
+    role: research_planner
+    runtime: claude_sdk
+    tools: [read_only, web]
+    permission_mode: read_only
+    model_tier: balanced
+    budget_tokens: 3500
+    timeout_seconds: 240
+    retry_limit: 1
+    description: define benchmark scope
+  - id: experiment_designer
+    role: experiment_designer
+    runtime: claude_sdk
+    tools: [python, repo]
+    permission_mode: read_only
+    model_tier: strong
+    budget_tokens: 4500
+    timeout_seconds: 360
+    retry_limit: 1
+    description: design benchmark and ablations
+  - id: research_reviewer
+    role: research_reviewer
+    runtime: claude_sdk
+    tools: [read_only]
+    permission_mode: read_only
+    model_tier: balanced
+    budget_tokens: 2500
+    timeout_seconds: 180
+    retry_limit: 1
+    description: validate benchmark design
+edges:
+  - source: research_planner
+    target: experiment_designer
+  - source: experiment_designer
+    target: research_reviewer
+loopbacks:
+  - source: research_reviewer
+    target: experiment_designer
+    condition: benchmark_incomplete
+retry_rules:
+  - node_id: experiment_designer
+    max_retries: 1
+    trigger: failed
+stop_rules:
+  - condition: reviewer_accept
+    action: accept
+budget_policy:
+  max_total_tokens: 14000
+  max_total_cost_usd: 10

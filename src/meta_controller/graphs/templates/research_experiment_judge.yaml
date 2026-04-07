@@ -1,0 +1,87 @@
+template_name: research_experiment_judge
+nodes:
+  - id: research_planner
+    role: research_planner
+    runtime: claude_sdk
+    tools: [read_only, web]
+    permission_mode: read_only
+    model_tier: balanced
+    budget_tokens: 4000
+    timeout_seconds: 240
+    retry_limit: 1
+    description: decompose the research task
+  - id: literature_scout
+    role: literature_scout
+    runtime: claude_sdk
+    tools: [web, paper_search, pdf]
+    permission_mode: read_only
+    model_tier: fast
+    budget_tokens: 3000
+    timeout_seconds: 240
+    retry_limit: 1
+    description: search literature and benchmarks
+  - id: paper_analyst
+    role: paper_analyst
+    runtime: claude_sdk
+    tools: [pdf, read_only]
+    permission_mode: read_only
+    model_tier: balanced
+    budget_tokens: 4000
+    timeout_seconds: 360
+    retry_limit: 1
+    description: inspect the top papers
+  - id: hypothesis_generator
+    role: hypothesis_generator
+    runtime: claude_sdk
+    tools: [read_only]
+    permission_mode: read_only
+    model_tier: strong
+    budget_tokens: 4000
+    timeout_seconds: 300
+    retry_limit: 1
+    description: propose a research hypothesis
+  - id: experiment_designer
+    role: experiment_designer
+    runtime: claude_sdk
+    tools: [python, repo, read_only]
+    permission_mode: read_only
+    model_tier: strong
+    budget_tokens: 5000
+    timeout_seconds: 420
+    retry_limit: 1
+    description: design metrics, baselines, and ablations
+  - id: research_reviewer
+    role: research_reviewer
+    runtime: claude_sdk
+    tools: [read_only]
+    permission_mode: read_only
+    model_tier: balanced
+    budget_tokens: 3000
+    timeout_seconds: 240
+    retry_limit: 1
+    description: review feasibility and evidence quality
+edges:
+  - source: research_planner
+    target: literature_scout
+  - source: literature_scout
+    target: paper_analyst
+  - source: paper_analyst
+    target: hypothesis_generator
+  - source: hypothesis_generator
+    target: experiment_designer
+  - source: experiment_designer
+    target: research_reviewer
+loopbacks:
+  - source: research_reviewer
+    target: experiment_designer
+    condition: design_incomplete
+retry_rules:
+  - node_id: experiment_designer
+    max_retries: 1
+    trigger: failed
+stop_rules:
+  - condition: reviewer_accept
+    action: accept
+budget_policy:
+  max_total_tokens: 22000
+  max_total_cost_usd: 14

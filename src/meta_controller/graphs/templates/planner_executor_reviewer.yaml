@@ -1,0 +1,51 @@
+template_name: planner_executor_reviewer
+nodes:
+  - id: planner
+    role: task_planner
+    runtime: claude_sdk
+    tools: [filesystem, grep]
+    permission_mode: read_only
+    model_tier: balanced
+    budget_tokens: 3000
+    timeout_seconds: 240
+    retry_limit: 1
+    description: create an execution plan
+  - id: executor
+    role: implementer
+    runtime: claude_sdk
+    tools: [filesystem, patch]
+    permission_mode: edit
+    model_tier: strong
+    budget_tokens: 5000
+    timeout_seconds: 420
+    retry_limit: 2
+    description: perform the main change
+  - id: reviewer
+    role: reviewer
+    runtime: claude_sdk
+    tools: [read_only]
+    permission_mode: read_only
+    model_tier: balanced
+    budget_tokens: 3000
+    timeout_seconds: 180
+    retry_limit: 1
+    description: validate the output independently
+edges:
+  - source: planner
+    target: executor
+  - source: executor
+    target: reviewer
+loopbacks:
+  - source: reviewer
+    target: executor
+    condition: reviewer_requests_changes
+retry_rules:
+  - node_id: executor
+    max_retries: 2
+    trigger: failed
+stop_rules:
+  - condition: reviewer_accept
+    action: accept
+budget_policy:
+  max_total_tokens: 12000
+  max_total_cost_usd: 10

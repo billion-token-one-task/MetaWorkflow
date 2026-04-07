@@ -1,0 +1,24 @@
+template_name: single_shot
+nodes:
+  - id: executor
+    role: implementer
+    runtime: claude_sdk
+    tools: [filesystem]
+    permission_mode: read_only
+    model_tier: balanced
+    budget_tokens: 3000
+    timeout_seconds: 180
+    retry_limit: 1
+    description: direct single-node execution
+edges: []
+loopbacks: []
+retry_rules:
+  - node_id: executor
+    max_retries: 1
+    trigger: failed
+stop_rules:
+  - condition: node_success
+    action: accept
+budget_policy:
+  max_total_tokens: 3000
+  max_total_cost_usd: 3

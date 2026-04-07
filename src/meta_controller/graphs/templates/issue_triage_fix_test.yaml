@@ -1,0 +1,51 @@
+template_name: issue_triage_fix_test
+nodes:
+  - id: repo_explorer
+    role: repo_explorer
+    runtime: claude_sdk
+    tools: [filesystem, grep, git]
+    permission_mode: read_only
+    model_tier: fast
+    budget_tokens: 2500
+    timeout_seconds: 180
+    retry_limit: 1
+    description: locate issue source
+  - id: implementer
+    role: implementer
+    runtime: claude_sdk
+    tools: [filesystem, git, patch]
+    permission_mode: edit
+    model_tier: strong
+    budget_tokens: 5000
+    timeout_seconds: 360
+    retry_limit: 2
+    description: patch the issue
+  - id: test_runner
+    role: test_runner
+    runtime: claude_sdk
+    tools: [bash, pytest]
+    permission_mode: execute
+    model_tier: balanced
+    budget_tokens: 3000
+    timeout_seconds: 300
+    retry_limit: 1
+    description: verify the fix
+edges:
+  - source: repo_explorer
+    target: implementer
+  - source: implementer
+    target: test_runner
+loopbacks:
+  - source: test_runner
+    target: implementer
+    condition: tests_failed
+retry_rules:
+  - node_id: implementer
+    max_retries: 2
+    trigger: failed
+stop_rules:
+  - condition: tests_pass
+    action: accept
+budget_policy:
+  max_total_tokens: 12000
+  max_total_cost_usd: 8

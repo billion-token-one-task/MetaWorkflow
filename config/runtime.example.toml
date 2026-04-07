@@ -1,0 +1,24 @@
+model_provider = "OpenAI"
+model = "gpt-5.4"
+review_model = "gpt-5.4"
+model_reasoning_effort = "xhigh"
+disable_response_storage = true
+network_access = "enabled"
+windows_wsl_setup_acknowledged = true
+model_context_window = 1000000
+model_auto_compact_token_limit = 900000
+
+[scheduler]
+enable_runtime_fallback = true
+
+[[scheduler.runtime_fallbacks]]
+from_runtime = "openhands"
+to_runtime = "claude_sdk"
+failure_types = ["configuration_error", "runtime_error"]
+
+[model_providers.OpenAI]
+name = "OpenAI"
+base_url = "http://your-openai-compatible-endpoint"
+wire_api = "responses"
+requires_openai_auth = true
+api_key = "sk-..."

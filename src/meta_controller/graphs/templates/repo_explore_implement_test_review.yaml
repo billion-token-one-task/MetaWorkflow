@@ -1,0 +1,69 @@
+template_name: repo_explore_implement_test_review
+nodes:
+  - id: repo_explorer
+    role: repo_explorer
+    runtime: claude_sdk
+    tools: [filesystem, grep, git]
+    permission_mode: read_only
+    model_tier: fast
+    budget_tokens: 3000
+    timeout_seconds: 180
+    retry_limit: 1
+    description: map the repo before editing
+  - id: implementer
+    role: implementer
+    runtime: claude_sdk
+    tools: [filesystem, git, patch, python]
+    permission_mode: edit
+    model_tier: strong
+    budget_tokens: 6000
+    timeout_seconds: 420
+    retry_limit: 2
+    description: implement the requested changes
+  - id: test_runner
+    role: test_runner
+    runtime: claude_sdk
+    tools: [bash, pytest]
+    permission_mode: execute
+    model_tier: balanced
+    budget_tokens: 3000
+    timeout_seconds: 300
+    retry_limit: 1
+    description: verify behavior
+  - id: reviewer
+    role: reviewer
+    runtime: claude_sdk
+    tools: [read_only, git]
+    permission_mode: read_only
+    model_tier: balanced
+    budget_tokens: 3000
+    timeout_seconds: 240
+    retry_limit: 1
+    description: review the patch and regression risk
+edges:
+  - source: repo_explorer
+    target: implementer
+  - source: implementer
+    target: test_runner
+  - source: test_runner
+    target: reviewer
+loopbacks:
+  - source: reviewer
+    target: implementer
+    condition: review_failed
+  - source: test_runner
+    target: implementer
+    condition: tests_failed
+retry_rules:
+  - node_id: implementer
+    max_retries: 2
+    trigger: failed
+  - node_id: test_runner
+    max_retries: 1
+    trigger: failed
+stop_rules:
+  - condition: reviewer_accept
+    action: accept
+budget_policy:
+  max_total_tokens: 18000
+  max_total_cost_usd: 12
