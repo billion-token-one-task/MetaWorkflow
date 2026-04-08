@@ -27,6 +27,14 @@ class TaskAnalyzer:
         "patch",
         "api",
         "sdk",
+        "frontend",
+        "backend",
+        "fullstack",
+        "database",
+        "sqlite",
+        "ui",
+        "api",
+        "app",
     }
     RESEARCH_TERMS = {
         "paper",
@@ -74,6 +82,7 @@ class TaskAnalyzer:
         "patch": {"patch", "fix", "implement"},
         "tests": {"test", "tests"},
         "workflow_spec": {"workflow", "dag", "graph"},
+        "runbook": {"run instructions", "startup", "runbook"},
     }
 
     def analyze(
@@ -157,6 +166,10 @@ class TaskAnalyzer:
             deliverables.extend(item for item in ["report", "experiment_plan"] if item not in deliverables)
         if domain == "coding":
             deliverables.extend(item for item in ["patch", "tests"] if item not in deliverables)
+            if self._looks_like_app_prototype(text):
+                for item in ["prototype_code", "runbook"]:
+                    if item not in deliverables:
+                        deliverables.append(item)
         if domain == "mixed":
             for item in ["report", "experiment_plan", "prototype_code", "workflow_spec"]:
                 if item not in deliverables:
@@ -205,9 +218,30 @@ class TaskAnalyzer:
             "repo-engineering": r"\b(repo|repository|patch|code)\b",
             "scientific-workflows": r"\b(research|paper|hypothesis|experiment)\b",
             "memory-systems": r"\b(memory|experience|retrieval)\b",
+            "prototype-app": r"\b(frontend|backend|fullstack|react|vue|next\.js|fastapi|flask|express|sqlite|dashboard|app)\b",
         }
         matches = [name for name, pattern in known.items() if re.search(pattern, text)]
         return matches or ["general"]
+
+    def _looks_like_app_prototype(self, text: str) -> bool:
+        app_terms = [
+            "frontend",
+            "backend",
+            "fullstack",
+            "react",
+            "vue",
+            "next.js",
+            "fastapi",
+            "flask",
+            "express",
+            "sqlite",
+            "dashboard",
+            "application",
+            "app",
+            "web ui",
+            "run instructions",
+        ]
+        return sum(term in text for term in app_terms) >= 2
 
     def _build_success_criteria(self, domain: str, deliverables: List[str], needs_validation: bool) -> List[str]:
         criteria = [f"produce_{item}" for item in deliverables]

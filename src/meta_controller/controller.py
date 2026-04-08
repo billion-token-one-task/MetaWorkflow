@@ -41,7 +41,8 @@ class MetaController:
             available_tools=available_tools or [],
             similar_memories=similar,
         )
-        routing_decision = self.domain_router.route(task_spec)
+        route_hints = self.memory_manager.get_route_hints(task_spec)
+        routing_decision = self.domain_router.route(task_spec, route_hints=route_hints)
         workflow_spec = self.workflow_synthesizer.synthesize(task_spec, routing_decision)
         episode = self.scheduler.run(task_spec=task_spec, workflow_spec=workflow_spec)
         episode.routing_decision = routing_decision.model_dump()
@@ -52,6 +53,19 @@ class MetaController:
         )
         episode.scaffold_edits = scaffold_edits
         self.memory_manager.write_episode(episode)
+        self.memory_manager.write_evolution_event(
+            {
+                "task_id": task_spec.task_id,
+                "task_text": task_spec.user_text,
+                "domain": task_spec.domain,
+                "subdomains": task_spec.subdomains,
+                "route_hints": route_hints,
+                "selected_template": routing_decision.template_name,
+                "candidate_templates": routing_decision.candidate_templates,
+                "success": episode.success,
+                "verdict": episode.judge_result.get("verdict"),
+            }
+        )
         return episode
 
     def summarize_episode(self, episode: EpisodeRecord) -> Dict[str, Any]:

@@ -25,6 +25,15 @@ class ScaffoldEditor:
                     "suggestion": suggestion,
                 }
             )
+        if task_spec.domain == "coding" and "prototype-app" in task_spec.subdomains and result.verdict != "accept":
+            edits.append(
+                {
+                    "scope": "workflow_template",
+                    "task_domain": task_spec.domain,
+                    "workflow_template": workflow_spec.template_name,
+                    "suggestion": "consider switching between prototype_app_builder_verify and prototype_app_direct_builder_verify based on recent successful runs",
+                }
+            )
         if edits:
             self.memory_manager.write_scaffold_edits(edits)
         return edits

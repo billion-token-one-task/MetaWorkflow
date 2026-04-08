@@ -82,6 +82,19 @@ class WorkflowSynthesizer:
 
     def _refine_for_task(self, workflow: WorkflowSpec, task_spec: TaskSpec) -> None:
         roles = {node.role for node in workflow.nodes}
+        is_prototype_app = task_spec.domain == "coding" and "prototype-app" in task_spec.subdomains
+
+        if is_prototype_app:
+            for node in workflow.nodes:
+                if node.role == "fullstack_builder":
+                    node.runtime = "claude_sdk"
+                    node.model_tier = "strong"
+                    node.permission_mode = "execute"
+                if node.role == "app_verifier":
+                    node.runtime = "local_app"
+                    node.permission_mode = "execute"
+            return
+
         if task_spec.domain == "coding" and task_spec.difficulty in {"heavy", "long-horizon"} and "task_planner" not in roles:
             self._insert_after(
                 workflow=workflow,
@@ -128,7 +141,7 @@ class WorkflowSynthesizer:
     def _ensure_validation(self, workflow: WorkflowSpec, task_spec: TaskSpec) -> None:
         if not task_spec.needs_multi_stage_validation:
             return
-        review_roles = {"reviewer", "research_reviewer", "judge", "integration_checker"}
+        review_roles = {"reviewer", "research_reviewer", "judge", "integration_checker", "app_verifier"}
         if any(node.role in review_roles for node in workflow.nodes):
             return
         terminal = workflow.nodes[-1]

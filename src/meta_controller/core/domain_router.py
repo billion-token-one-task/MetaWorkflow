@@ -4,7 +4,10 @@ from meta_controller.core.models import RoutingDecision, TaskSpec
 
 
 class DomainRouter:
-    def route(self, task_spec: TaskSpec) -> RoutingDecision:
+    def route(self, task_spec: TaskSpec, route_hints: dict | None = None) -> RoutingDecision:
+        is_prototype_app = task_spec.domain == "coding" and "prototype-app" in task_spec.subdomains
+        route_hints = route_hints or {}
+
         if task_spec.domain == "direct_answer":
             template = "single_shot" if task_spec.difficulty in {"trivial", "normal"} else "planner_executor_reviewer"
             return RoutingDecision(
@@ -13,6 +16,26 @@ class DomainRouter:
                 candidate_templates=[template, "single_shot"],
                 runtime_preference="claude_sdk",
                 reason="answer-oriented task should stay on the lightweight Claude runtime path",
+            )
+
+        if is_prototype_app:
+            candidate_templates = [
+                "prototype_app_direct_builder_verify",
+                "prototype_app_builder_verify",
+                "repo_explore_implement_test_review",
+            ]
+            preferred_template = route_hints.get("preferred_template")
+            template = preferred_template if preferred_template in candidate_templates else "prototype_app_builder_verify"
+            if template == "prototype_app_builder_verify" and any(
+                token in task_spec.user_text.lower() for token in ("log application", "todo application", "notes application", "local log", "local todo", "local notes")
+            ):
+                template = "prototype_app_direct_builder_verify"
+            return RoutingDecision(
+                mode="prototype_app_mode",
+                template_name=template,
+                candidate_templates=candidate_templates,
+                runtime_preference="claude_sdk",
+                reason="prototype app generation should adapt between direct builder and spec-driven builder flows based on task shape and prior outcomes",
             )
 
         if task_spec.domain == "coding":

@@ -1,0 +1,54 @@
+template_name: prototype_app_builder_verify
+nodes:
+  - id: app_spec_extractor
+    role: app_spec_extractor
+    runtime: claude_sdk
+    tools: [filesystem, grep, read_only]
+    permission_mode: read_only
+    model_tier: balanced
+    budget_tokens: 3500
+    timeout_seconds: 240
+    retry_limit: 1
+    description: extract a concrete application blueprint from the product request
+  - id: fullstack_builder
+    role: fullstack_builder
+    runtime: claude_sdk
+    tools: [filesystem, patch, python, bash]
+    permission_mode: execute
+    model_tier: strong
+    budget_tokens: 8000
+    timeout_seconds: 900
+    retry_limit: 2
+    description: scaffold the runnable frontend backend prototype
+  - id: app_verifier
+    role: app_verifier
+    runtime: local_app
+    tools: [filesystem, bash, python]
+    permission_mode: execute
+    model_tier: balanced
+    budget_tokens: 4000
+    timeout_seconds: 480
+    retry_limit: 2
+    description: run startup and core flow verification for the generated app
+edges:
+  - source: app_spec_extractor
+    target: fullstack_builder
+  - source: fullstack_builder
+    target: app_verifier
+loopbacks:
+  - source: app_verifier
+    target: fullstack_builder
+    condition: app_does_not_start
+retry_rules:
+  - node_id: fullstack_builder
+    max_retries: 2
+    trigger: failed
+  - node_id: app_verifier
+    max_retries: 2
+    trigger: failed
+stop_rules:
+  - condition: verifier_accept
+    action: accept
+budget_policy:
+  max_total_tokens: 22000
+  max_total_cost_usd: 20

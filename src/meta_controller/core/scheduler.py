@@ -9,6 +9,7 @@ from meta_controller.core.memory_manager import MemoryManager
 from meta_controller.core.models import EpisodeRecord, TaskSpec, WorkerResult, WorkflowNode, WorkflowSpec, WorkerRun
 from meta_controller.runtime_config import load_runtime_config
 from meta_controller.runtimes.claude_runtime import ClaudeRuntime
+from meta_controller.runtimes.local_app_runtime import LocalAppRuntime
 from meta_controller.runtimes.openhands_runtime import OpenHandsRuntime
 from meta_controller.workers import build_worker
 
@@ -21,6 +22,7 @@ class Scheduler:
         self.runtimes = {
             "claude_sdk": ClaudeRuntime(dry_run=dry_run),
             "openhands": OpenHandsRuntime(dry_run=dry_run),
+            "local_app": LocalAppRuntime(dry_run=dry_run),
         }
 
     def run(self, task_spec: TaskSpec, workflow_spec: WorkflowSpec) -> EpisodeRecord:

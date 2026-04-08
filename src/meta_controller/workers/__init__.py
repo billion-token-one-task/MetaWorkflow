@@ -1,4 +1,7 @@
 from meta_controller.workers.base import GenericWorker, RoleWorker
+from meta_controller.workers.coding.app_spec_extractor import AppSpecExtractorWorker
+from meta_controller.workers.coding.app_verifier import AppVerifierWorker
+from meta_controller.workers.coding.fullstack_builder import FullstackBuilderWorker
 from meta_controller.workers.coding.implementer import ImplementerWorker
 from meta_controller.workers.coding.integration_checker import IntegrationCheckerWorker
 from meta_controller.workers.coding.repo_explorer import RepoExplorerWorker
@@ -14,6 +17,9 @@ from meta_controller.workers.research.reviewer import ResearchReviewerWorker
 
 
 ROLE_REGISTRY = {
+    "app_spec_extractor": AppSpecExtractorWorker,
+    "fullstack_builder": FullstackBuilderWorker,
+    "app_verifier": AppVerifierWorker,
     "repo_explorer": RepoExplorerWorker,
     "task_planner": TaskPlannerWorker,
     "implementer": ImplementerWorker,

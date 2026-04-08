@@ -1,0 +1,42 @@
+template_name: prototype_app_direct_builder_verify
+nodes:
+  - id: fullstack_builder
+    role: fullstack_builder
+    runtime: claude_sdk
+    tools: [filesystem, patch, python, bash]
+    permission_mode: execute
+    model_tier: strong
+    budget_tokens: 9000
+    timeout_seconds: 900
+    retry_limit: 2
+    description: scaffold the runnable app directly from the task
+  - id: app_verifier
+    role: app_verifier
+    runtime: local_app
+    tools: [filesystem, bash, python]
+    permission_mode: execute
+    model_tier: balanced
+    budget_tokens: 4000
+    timeout_seconds: 480
+    retry_limit: 2
+    description: verify startup, healthcheck, and tests for the generated app
+edges:
+  - source: fullstack_builder
+    target: app_verifier
+loopbacks:
+  - source: app_verifier
+    target: fullstack_builder
+    condition: app_does_not_start
+retry_rules:
+  - node_id: fullstack_builder
+    max_retries: 2
+    trigger: failed
+  - node_id: app_verifier
+    max_retries: 2
+    trigger: failed
+stop_rules:
+  - condition: verifier_accept
+    action: accept
+budget_policy:
+  max_total_tokens: 18000
+  max_total_cost_usd: 16
